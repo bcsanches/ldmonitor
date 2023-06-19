@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 3.14)
 #main project
 project (ldmonitor)
 
+set(CMAKE_CXX_STANDARD 17)
+
 set(VERSION_MAJOR "0" )
 set(VERSION_MINOR "1" )
 set(VERSION_PATCH "0" )
