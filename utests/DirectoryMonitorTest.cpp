@@ -14,14 +14,11 @@
 #include <fstream>
 
 #include "DirectoryMonitor.h"
-#include "FileSystem.h"
-#include "Log.h"
 
-using namespace dcclite;
 using namespace std::chrono_literals;
 
 
-static void NullFileCallback(const dcclite::fs::path &path, std::string fileName, uint32_t flags)
+static void NullFileCallback(const DirectoryMonitor::fs::path &path, std::string fileName, uint32_t flags)
 {
 
 }
@@ -29,15 +26,13 @@ static void NullFileCallback(const dcclite::fs::path &path, std::string fileName
 
 
 TEST(DirectoryMonitor, CancelWatcherTest)
-{
-	dcclite::LogInit("DccLite.Filemonitor.CancelWatcher.log");
-
+{	
 #if 1
-	auto tmpPath = dcclite::fs::temp_directory_path();
+	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");
 
-	dcclite::fs::create_directories(tmpPath);
+	DirectoryMonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
@@ -46,20 +41,16 @@ TEST(DirectoryMonitor, CancelWatcherTest)
 	DirectoryMonitor::Watch(tmpPath, NullFileCallback, DirectoryMonitor::MONITOR_ACTION_FILE_CREATE);
 
 	DirectoryMonitor::Unwatch(tmpPath);
-
-	dcclite::LogFinalize();
 }
 
 TEST(DirectoryMonitor, CancelWaitingWatcherTest)
-{
-	dcclite::LogInit("DccLite.DirectoryMonitor.CancelWaitingWatcher.log");
-
+{	
 #if 1
-	auto tmpPath = dcclite::fs::temp_directory_path();
+	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");
 
-	dcclite::fs::create_directories(tmpPath);
+	DirectoryMonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
@@ -81,8 +72,6 @@ TEST(DirectoryMonitor, CancelWaitingWatcherTest)
 	}
 
 	DirectoryMonitor::Unwatch(tmpPath);
-
-	dcclite::LogFinalize();
 }
 
 
@@ -94,7 +83,7 @@ TEST(DirectoryMonitor, CancelWaitingWatcherTest)
 
 static bool g_fThrowFileCallbackCalled = false;
 
-static void ThrowFileCallback(const dcclite::fs::path &path, std::string fileName, uint32_t flags)
+static void ThrowFileCallback(const DirectoryMonitor::fs::path &path, std::string fileName, uint32_t flags)
 {	
 	ASSERT_THROW(DirectoryMonitor::Unwatch(path), std::logic_error);
 
@@ -102,21 +91,19 @@ static void ThrowFileCallback(const dcclite::fs::path &path, std::string fileNam
 }
 
 TEST(DirectoryMonitor, ThrowWatcherTest)
-{
-	dcclite::LogInit("DccLite.Filemonitor.ThrowWatcher.log");
-
+{	
 #if 1
-	auto tmpPath = dcclite::fs::temp_directory_path();
+	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");
 
-	dcclite::fs::create_directories(tmpPath);
+	DirectoryMonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
 	filePath.append("f1_cancel.txt");
 
-	dcclite::fs::remove(filePath);
+	DirectoryMonitor::fs::remove(filePath);
 
 	DirectoryMonitor::Watch(tmpPath, ThrowFileCallback, DirectoryMonitor::MONITOR_ACTION_FILE_CREATE);
 
@@ -130,8 +117,7 @@ TEST(DirectoryMonitor, ThrowWatcherTest)
 	while (!g_fThrowFileCallbackCalled)
 		std::this_thread::sleep_for(1ms);
 
-	DirectoryMonitor::Unwatch(tmpPath);
-	dcclite::LogFinalize();
+	DirectoryMonitor::Unwatch(tmpPath);	
 }
 
 //
@@ -146,7 +132,7 @@ static bool g_fModifyCalled = false;
 static bool g_fRenameOldCalled = false;
 static bool g_fRenameNewCalled = false;
 
-static void FileCallback(const dcclite::fs::path &path, std::string fileName, uint32_t flags)
+static void FileCallback(const DirectoryMonitor::fs::path &path, std::string fileName, uint32_t flags)
 {
 	if(flags & DirectoryMonitor::MONITOR_ACTION_FILE_CREATE)
 		g_fCreateCalled = true;
@@ -184,15 +170,13 @@ static void AssertFlagsClear()
 }
 
 TEST(DirectoryMonitor, BasicTest)
-{	
-	dcclite::LogInit("DccLite.Filemonitor.log");
-
+{		
 #if 1
-	auto tmpPath = dcclite::fs::temp_directory_path();
+	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");	
 
-	dcclite::fs::create_directories(tmpPath);
+	DirectoryMonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
@@ -201,8 +185,8 @@ TEST(DirectoryMonitor, BasicTest)
 	auto newName = tmpPath;
 	newName.append("f2.txt");
 
-	dcclite::fs::remove(newName);
-	dcclite::fs::remove(filePath);	
+	DirectoryMonitor::fs::remove(newName);
+	DirectoryMonitor::fs::remove(filePath);
 
 	ClearFlags();
 	
@@ -221,8 +205,7 @@ TEST(DirectoryMonitor, BasicTest)
 	{
 		std::ofstream ofs(filePath);
 	}
-
-	dcclite::LogGetDefault()->trace("[FileMonitor::BasicTest] Creation check");
+	
 	for (;;)
 	{			
 		if (g_fCreateCalled)
@@ -234,9 +217,7 @@ TEST(DirectoryMonitor, BasicTest)
 		}
 
 		std::this_thread::sleep_for(1ms);
-	}
-
-	dcclite::LogGetDefault()->trace("[FileMonitor::BasicTest] Modify check");
+	}	
 
 	{
 		std::ofstream ofs(filePath);
@@ -254,11 +235,9 @@ TEST(DirectoryMonitor, BasicTest)
 		}
 
 		std::this_thread::sleep_for(1ms);
-	}
+	}	
 
-	dcclite::LogGetDefault()->trace("[FileMonitor::BasicTest] rename check");
-
-	dcclite::fs::rename(filePath, newName);
+	DirectoryMonitor::fs::rename(filePath, newName);
 
 	for (;;)
 	{
@@ -272,11 +251,9 @@ TEST(DirectoryMonitor, BasicTest)
 		}
 
 		std::this_thread::sleep_for(1ms);
-	}
+	}	
 
-	dcclite::LogGetDefault()->trace("[FileMonitor::BasicTest] remove check");
-
-	dcclite::fs::remove(newName);
+	DirectoryMonitor::fs::remove(newName);
 
 	for (;;)
 	{
@@ -290,9 +267,5 @@ TEST(DirectoryMonitor, BasicTest)
 		std::this_thread::sleep_for(1ms);
 	}
 		
-	DirectoryMonitor::Unwatch(tmpPath);	
-
-	dcclite::LogGetDefault()->trace("[FileMonitor::BasicTest] finished");
-
-	dcclite::LogFinalize();
+	DirectoryMonitor::Unwatch(tmpPath);
 }

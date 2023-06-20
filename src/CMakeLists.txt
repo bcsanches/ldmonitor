@@ -7,6 +7,9 @@ else(WIN32)
   add_library(ldmonitor DirectoryMonitor_linux.cpp)
      
 endif(WIN32)
+
+
+target_include_directories(ldmonitor PRIVATE ${PROJECT_SOURCE_DIR}/include/ldmonitor)
 		
 #target_compile_features(Common PUBLIC cxx_std_17)     
 

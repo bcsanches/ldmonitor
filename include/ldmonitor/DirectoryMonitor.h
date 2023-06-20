@@ -11,10 +11,26 @@
 #include <functional>
 #include <optional>
 
-#include "FileSystem.h"
+#ifdef WIN32
+	#include <filesystem>
+#else
+	#include <experimental/filesystem>
+#endif
 
-namespace dcclite::DirectoryMonitor
+namespace DirectoryMonitor
 {
+#ifdef WIN32
+
+	namespace fs = std::filesystem;
+
+#else
+
+	//evil hack?
+	namespace fs = std::experimental::filesystem;
+
+#endif
+
+
 	enum MonitorActions
 	{
 		MONITOR_ACTION_FILE_CREATE = 0x01,
@@ -24,13 +40,13 @@ namespace dcclite::DirectoryMonitor
 		MONITOR_ACTION_FILE_RENAME_NEW_NAME = 0x10
 	};
 
-	typedef std::function<void(const dcclite::fs::path &path, std::string fileName, const uint32_t action)> Callback_t;
+	typedef std::function<void(const fs::path &path, std::string fileName, const uint32_t action)> Callback_t;
 
-	void Watch(const dcclite::fs::path &path, Callback_t callback, const uint32_t action);
-	bool Unwatch(const dcclite::fs::path &path);
+	void Watch(const fs::path &path, Callback_t callback, const uint32_t action);
+	bool Unwatch(const fs::path &path);
 
 	namespace detail
 	{
-		std::optional<bool> IsThreadWaiting(const dcclite::fs::path &path);
+		std::optional<bool> IsThreadWaiting(const fs::path &path);
 	}	
 }

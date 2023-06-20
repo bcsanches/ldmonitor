@@ -13,18 +13,13 @@
 #include <array>
 #include <mutex>
 #include <map>
-
-#include <fmt/format.h>
-
-#include <spdlog/logger.h>
+#include <sstream>
 
 #include <Windows.h>
 
-#include "LogUtils.h"
-
 //https://qualapps.blogspot.com/2010/05/understanding-readdirectorychangesw.html
 
-namespace dcclite::DirectoryMonitor
+namespace DirectoryMonitor
 {	
 	struct DirectoryMonitor
 	{		
@@ -36,7 +31,7 @@ namespace dcclite::DirectoryMonitor
 
 		std::array<uint8_t, 1024 * 4>	m_arBuffer;
 
-		dcclite::fs::path				m_pthPath;
+		fs::path						m_pthPath;
 
 		Callback_t						m_pfnCallback;
 
@@ -104,7 +99,13 @@ namespace dcclite::DirectoryMonitor
 				return MONITOR_ACTION_FILE_MODIFY;
 
 			default:
-				LogGetDefault()->error("[DirectoryMonitor] ReadActions2Flags unexpected value: {}", action);
+				{
+					std::stringstream stream;
+
+					stream << "[DirectoryMonitor::ReadActions2Flags] Unexpected action: " << action;
+
+					throw std::runtime_error(stream.str());
+				}				
 				return 0;
 		}
 	}
@@ -132,7 +133,7 @@ namespace dcclite::DirectoryMonitor
 
 			if (dirInfo.m_fCancel)
 			{
-				LogGetDefault()->trace("[FileMonitor::ThreadProc] Thread cancelled before waiting for IO");
+				//LogGetDefault()->trace("[FileMonitor::ThreadProc] Thread cancelled before waiting for IO");
 				return;
 			}
 				
@@ -147,14 +148,18 @@ namespace dcclite::DirectoryMonitor
 				const auto ec = GetLastError();
 				if (ec == ERROR_OPERATION_ABORTED)
 				{
-					LogGetDefault()->trace("[FileMonitor::ThreadProc] GetOverlappedResult aborted, thread exiting");					
+					//LogGetDefault()->trace("[FileMonitor::ThreadProc] GetOverlappedResult aborted, thread exiting");					
+
+					break;
 				}
 				else
 				{
-					LogGetDefault()->error("[FileMonitor::ThreadProc] GetOverlappedResult failed, ec: {}", ec);
-				}					
+					std::stringstream stream;
 
-				break;
+					stream << "[FileMonitor::ThreadProc] Error GetOverlappedResult failed, ec: " << ec << ' ' << std::system_category().message(ec);
+
+					throw std::runtime_error(stream.str());
+				}									
 			}							
 
 			PFILE_NOTIFY_INFORMATION info;
@@ -207,22 +212,29 @@ namespace dcclite::DirectoryMonitor
 			ResetEvent(dirInfo.m_tOverlapped.hEvent);
 
 			if (!RegisterWatcher(dirInfo))
-			{
-				LogGetDefault()->error("[FileMonitor::ThreadProc] RegisterWatcher failed, ec: {}", GetLastError());
+			{				
+				std::stringstream stream;
+				
+				auto ec = GetLastError();
 
-				return;
+				stream << "[FileMonitor::ThreadProc] Error RegisterWatcher failed, ec: " << ec << std::system_category().message(ec);
+
+				throw std::runtime_error(stream.str());				
 			}			
 		}	
 	}
 
-	void Watch(const dcclite::fs::path &path, Callback_t callback, uint32_t flags)
+	void Watch(const fs::path &path, Callback_t callback, uint32_t flags)
 	{		
 		std::lock_guard lock{g_State.m_clLock};		
 
 		auto it = g_State.m_mapWatchers.lower_bound(path);
 		if ((it != g_State.m_mapWatchers.end()) && !(g_State.m_mapWatchers.key_comp()(path, it->first)))
 		{
-			throw std::invalid_argument(fmt::format("[WatchFile] Directory already has a watcher: {}", path.string()));
+			std::stringstream stream;
+			stream << "[WatchFile] Directory already has a watcher: " << path;
+
+			throw std::invalid_argument(stream.str());
 		}
 		else
 		{
@@ -239,7 +251,10 @@ namespace dcclite::DirectoryMonitor
 
 			if (handle == INVALID_HANDLE_VALUE)
 			{
-				throw std::invalid_argument(fmt::format("[WatchFile] Cannot open directory: {}", pathStr));
+				std::stringstream stream;
+				stream << "[WatchFile] Cannot open directory: " << pathStr;
+				
+				throw std::invalid_argument(stream.str());
 			}
 
 			it = g_State.m_mapWatchers.emplace_hint(it, path, DirectoryMonitor{});
@@ -264,12 +279,22 @@ namespace dcclite::DirectoryMonitor
 
 				g_State.m_mapWatchers.erase(it);
 
-				throw std::runtime_error(fmt::format("[WatchFile] Cannot create event for {} - ec {}", path.string(), GetLastError()));
+				auto ec = GetLastError();
+
+				std::stringstream stream;
+				stream << "[WatchFile] Cannot create event for " << path << ' ' << ec << ": " << std::system_category().message(ec);
+
+				throw std::runtime_error(stream.str());				
 			}
 
 			if (!RegisterWatcher(dirInfo))
 			{
-				throw std::runtime_error(fmt::format("[WatchFile] ReadDirectoryChangesW failed for {} - ec {}", path.string(), GetLastError()));
+				auto ec = GetLastError();
+
+				std::stringstream stream;
+				stream << "[WatchFile] ReadDirectoryChangesW failed for " << path << ' ' << ec << ": " << std::system_category().message(ec);
+
+				throw std::runtime_error(stream.str());
 			}
 
 			it->second.m_thMonitorThread = std::thread{ [&dirInfo]() { ThreadProc(dirInfo); } };
@@ -314,7 +339,7 @@ namespace dcclite::DirectoryMonitor
 		g_State.m_mapWatchers.erase(it);
 	}
 
-	bool Unwatch(const dcclite::fs::path &path)
+	bool Unwatch(const fs::path &path)
 	{
 		std::unique_lock lock{g_State.m_clLock};
 
@@ -330,7 +355,7 @@ namespace dcclite::DirectoryMonitor
 
 	namespace detail
 	{
-		std::optional<bool> IsThreadWaiting(const dcclite::fs::path &path)
+		std::optional<bool> IsThreadWaiting(const fs::path &path)
 		{
 			std::unique_lock lock{g_State.m_clLock};
 
