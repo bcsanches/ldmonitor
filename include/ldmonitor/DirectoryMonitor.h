@@ -17,7 +17,7 @@
 	#include <experimental/filesystem>
 #endif
 
-namespace DirectoryMonitor
+namespace ldmonitor
 {
 #ifdef WIN32
 
@@ -44,6 +44,8 @@ namespace DirectoryMonitor
 
 	void Watch(const fs::path &path, Callback_t callback, const uint32_t action);
 	bool Unwatch(const fs::path &path);
+
+	std::string ActionName(const uint32_t action);
 
 	namespace detail
 	{

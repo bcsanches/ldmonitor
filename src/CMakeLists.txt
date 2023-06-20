@@ -1,10 +1,10 @@
 if(WIN32)
 
-  add_library(ldmonitor DirectoryMonitor_win.cpp)
+  add_library(ldmonitor DirectoryMonitor.cpp DirectoryMonitor_win.cpp)
 
 else(WIN32)
 
-  add_library(ldmonitor DirectoryMonitor_linux.cpp)
+  add_library(ldmonitor DirectoryMonitor.cpp DirectoryMonitor_linux.cpp)
      
 endif(WIN32)
 

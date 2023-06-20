@@ -13,55 +13,75 @@
 #include <thread>
 #include <fstream>
 
-#include "DirectoryMonitor.h"
+#include "ldmonitor/DirectoryMonitor.h"
 
 using namespace std::chrono_literals;
 
 
-static void NullFileCallback(const DirectoryMonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void NullFileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
 {
-
+	//empty
 }
 
-
-
-TEST(DirectoryMonitor, CancelWatcherTest)
-{	
-#if 1
-	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
+TEST(ldmonitor, Errors)
+{
+	auto tmpPath = ldmonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");
 
-	DirectoryMonitor::fs::create_directories(tmpPath);
+	ldmonitor::fs::create_directories(tmpPath);	
+
+	ldmonitor::Watch(tmpPath, NullFileCallback, ldmonitor::MONITOR_ACTION_FILE_CREATE);
+
+	//same path to monitor again
+	ASSERT_THROW(ldmonitor::Watch(tmpPath, NullFileCallback, ldmonitor::MONITOR_ACTION_FILE_CREATE), std::invalid_argument);
+
+	//same path, but with diferent flags
+	ASSERT_THROW(ldmonitor::Watch(tmpPath, NullFileCallback, ldmonitor::MONITOR_ACTION_FILE_DELETE), std::invalid_argument);
+
+	//invalid path
+	ASSERT_THROW(ldmonitor::Watch("/win/123/IHopeYouDoesNotExists", NullFileCallback, ldmonitor::MONITOR_ACTION_FILE_DELETE), std::invalid_argument);
+
+	ldmonitor::Unwatch(tmpPath);
+}
+
+TEST(ldmonitor, CancelWatcherTest)
+{	
+#if 1
+	auto tmpPath = ldmonitor::fs::temp_directory_path();
+
+	tmpPath.append("testDir");
+
+	ldmonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
 	filePath.append("f1_cancel.txt");	
 
-	DirectoryMonitor::Watch(tmpPath, NullFileCallback, DirectoryMonitor::MONITOR_ACTION_FILE_CREATE);
+	ldmonitor::Watch(tmpPath, NullFileCallback, ldmonitor::MONITOR_ACTION_FILE_CREATE);
 
-	DirectoryMonitor::Unwatch(tmpPath);
+	ldmonitor::Unwatch(tmpPath);
 }
 
-TEST(DirectoryMonitor, CancelWaitingWatcherTest)
+TEST(ldmonitor, CancelWaitingWatcherTest)
 {	
 #if 1
-	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
+	auto tmpPath = ldmonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");
 
-	DirectoryMonitor::fs::create_directories(tmpPath);
+	ldmonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
 	filePath.append("f1_cancel.txt");
 
-	DirectoryMonitor::Watch(tmpPath, NullFileCallback, DirectoryMonitor::MONITOR_ACTION_FILE_CREATE);
+	ldmonitor::Watch(tmpPath, NullFileCallback, ldmonitor::MONITOR_ACTION_FILE_CREATE);
 
 	//make almost sure thread is waiting...
 	for (;;)
 	{
-		auto v = DirectoryMonitor::detail::IsThreadWaiting(tmpPath);
+		auto v = ldmonitor::detail::IsThreadWaiting(tmpPath);
 		if (v.has_value() && v.value())
 		{
 			std::this_thread::sleep_for(5ms);
@@ -71,7 +91,7 @@ TEST(DirectoryMonitor, CancelWaitingWatcherTest)
 		std::this_thread::sleep_for(1ms);
 	}
 
-	DirectoryMonitor::Unwatch(tmpPath);
+	ldmonitor::Unwatch(tmpPath);
 }
 
 
@@ -83,29 +103,29 @@ TEST(DirectoryMonitor, CancelWaitingWatcherTest)
 
 static bool g_fThrowFileCallbackCalled = false;
 
-static void ThrowFileCallback(const DirectoryMonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void ThrowFileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
 {	
-	ASSERT_THROW(DirectoryMonitor::Unwatch(path), std::logic_error);
+	ASSERT_THROW(ldmonitor::Unwatch(path), std::logic_error);
 
 	g_fThrowFileCallbackCalled = true;
 }
 
-TEST(DirectoryMonitor, ThrowWatcherTest)
+TEST(ldmonitor, ThrowWatcherTest)
 {	
 #if 1
-	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
+	auto tmpPath = ldmonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");
 
-	DirectoryMonitor::fs::create_directories(tmpPath);
+	ldmonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
 	filePath.append("f1_cancel.txt");
 
-	DirectoryMonitor::fs::remove(filePath);
+	ldmonitor::fs::remove(filePath);
 
-	DirectoryMonitor::Watch(tmpPath, ThrowFileCallback, DirectoryMonitor::MONITOR_ACTION_FILE_CREATE);
+	ldmonitor::Watch(tmpPath, ThrowFileCallback, ldmonitor::MONITOR_ACTION_FILE_CREATE);
 
 	ASSERT_FALSE(g_fThrowFileCallbackCalled);
 
@@ -117,7 +137,7 @@ TEST(DirectoryMonitor, ThrowWatcherTest)
 	while (!g_fThrowFileCallbackCalled)
 		std::this_thread::sleep_for(1ms);
 
-	DirectoryMonitor::Unwatch(tmpPath);	
+	ldmonitor::Unwatch(tmpPath);	
 }
 
 //
@@ -132,21 +152,21 @@ static bool g_fModifyCalled = false;
 static bool g_fRenameOldCalled = false;
 static bool g_fRenameNewCalled = false;
 
-static void FileCallback(const DirectoryMonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void FileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
 {
-	if(flags & DirectoryMonitor::MONITOR_ACTION_FILE_CREATE)
+	if(flags & ldmonitor::MONITOR_ACTION_FILE_CREATE)
 		g_fCreateCalled = true;
 
-	if(flags & DirectoryMonitor::MONITOR_ACTION_FILE_DELETE)
+	if(flags & ldmonitor::MONITOR_ACTION_FILE_DELETE)
 		g_fDeleteCalled = true;
 
-	if(flags & DirectoryMonitor::MONITOR_ACTION_FILE_MODIFY)
+	if(flags & ldmonitor::MONITOR_ACTION_FILE_MODIFY)
 		g_fModifyCalled = true;
 
-	if(flags & DirectoryMonitor::MONITOR_ACTION_FILE_RENAME_OLD_NAME)
+	if(flags & ldmonitor::MONITOR_ACTION_FILE_RENAME_OLD_NAME)
 		g_fRenameOldCalled = true;
 
-	if(flags & DirectoryMonitor::MONITOR_ACTION_FILE_RENAME_NEW_NAME)
+	if(flags & ldmonitor::MONITOR_ACTION_FILE_RENAME_NEW_NAME)
 		g_fRenameNewCalled = true;
 
 }
@@ -169,14 +189,14 @@ static void AssertFlagsClear()
 	ASSERT_FALSE(g_fRenameNewCalled);
 }
 
-TEST(DirectoryMonitor, BasicTest)
+TEST(ldmonitor, BasicTest)
 {		
 #if 1
-	auto tmpPath = DirectoryMonitor::fs::temp_directory_path();
+	auto tmpPath = ldmonitor::fs::temp_directory_path();
 
 	tmpPath.append("testDir");	
 
-	DirectoryMonitor::fs::create_directories(tmpPath);
+	ldmonitor::fs::create_directories(tmpPath);
 #endif
 
 	auto filePath = tmpPath;
@@ -185,19 +205,19 @@ TEST(DirectoryMonitor, BasicTest)
 	auto newName = tmpPath;
 	newName.append("f2.txt");
 
-	DirectoryMonitor::fs::remove(newName);
-	DirectoryMonitor::fs::remove(filePath);
+	ldmonitor::fs::remove(newName);
+	ldmonitor::fs::remove(filePath);
 
 	ClearFlags();
 	
-	DirectoryMonitor::Watch(
+	ldmonitor::Watch(
 		tmpPath, 
 		FileCallback, 
-		DirectoryMonitor::MONITOR_ACTION_FILE_CREATE | 
-		DirectoryMonitor::MONITOR_ACTION_FILE_DELETE | 
-		DirectoryMonitor::MONITOR_ACTION_FILE_MODIFY |
-		DirectoryMonitor::MONITOR_ACTION_FILE_RENAME_OLD_NAME | 
-		DirectoryMonitor::MONITOR_ACTION_FILE_RENAME_NEW_NAME
+		ldmonitor::MONITOR_ACTION_FILE_CREATE | 
+		ldmonitor::MONITOR_ACTION_FILE_DELETE | 
+		ldmonitor::MONITOR_ACTION_FILE_MODIFY |
+		ldmonitor::MONITOR_ACTION_FILE_RENAME_OLD_NAME | 
+		ldmonitor::MONITOR_ACTION_FILE_RENAME_NEW_NAME
 	);	
 
 	AssertFlagsClear();
@@ -237,7 +257,7 @@ TEST(DirectoryMonitor, BasicTest)
 		std::this_thread::sleep_for(1ms);
 	}	
 
-	DirectoryMonitor::fs::rename(filePath, newName);
+	ldmonitor::fs::rename(filePath, newName);
 
 	for (;;)
 	{
@@ -253,7 +273,7 @@ TEST(DirectoryMonitor, BasicTest)
 		std::this_thread::sleep_for(1ms);
 	}	
 
-	DirectoryMonitor::fs::remove(newName);
+	ldmonitor::fs::remove(newName);
 
 	for (;;)
 	{
@@ -267,5 +287,5 @@ TEST(DirectoryMonitor, BasicTest)
 		std::this_thread::sleep_for(1ms);
 	}
 		
-	DirectoryMonitor::Unwatch(tmpPath);
+	ldmonitor::Unwatch(tmpPath);
 }

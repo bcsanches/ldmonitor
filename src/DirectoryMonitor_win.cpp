@@ -19,7 +19,7 @@
 
 //https://qualapps.blogspot.com/2010/05/understanding-readdirectorychangesw.html
 
-namespace DirectoryMonitor
+namespace ldmonitor
 {	
 	struct DirectoryMonitor
 	{		
@@ -252,7 +252,7 @@ namespace DirectoryMonitor
 			if (handle == INVALID_HANDLE_VALUE)
 			{
 				std::stringstream stream;
-				stream << "[WatchFile] Cannot open directory: " << pathStr;
+				stream << "[WatchFile] Cannot open directory: " << pathStr << ", error " << std::system_category().message(GetLastError());
 				
 				throw std::invalid_argument(stream.str());
 			}

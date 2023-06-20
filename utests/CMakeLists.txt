@@ -34,4 +34,4 @@ package_add_test(MainTest DirectoryMonitorTest.cpp)
 
 target_link_libraries(MainTest ldmonitor)
 
-target_include_directories(MainTest PRIVATE ${PROJECT_SOURCE_DIR}/include/ldmonitor)
+target_include_directories(MainTest PRIVATE ${PROJECT_SOURCE_DIR}/include/)

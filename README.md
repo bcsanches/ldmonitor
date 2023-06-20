@@ -10,6 +10,27 @@ This is a multithreaded library, so the callback will not be called from the sam
 
 It can monitor as many directories as necessary, but it uses one thread per directory, so it was not designed to be fast, just simple to use. If you need to monitor several directories or/and expect lot of changes per second, probably this will have a bad performance.
 
+# Example
+-
+To monitor a directory for modifications and detect it, simple register it and provide a callback:
+
+```c++
+ldmonitor::Watch(
+        "/mypath/", 
+        [](const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
+        {
+            std::cout << "Callback called, file " << path << fileName << ' ' << ldmonitor::ActionName(flags) << '\n';
+        }, 
+        ldmonitor::MONITOR_ACTION_FILE_CREATE | ldmonitor::MONITOR_ACTION_FILE_MODIFY
+    );
+
+    //
+    //Do something... callback will be called sometime later by another thread...
+
+    //remove it when not necessary anymore...
+    ldmonitor::Unwatch("/mypath/");
+```
+
 ## License
 
 All code is licensed under the [MPLv2 License][2].
