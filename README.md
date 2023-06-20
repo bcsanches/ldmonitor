@@ -11,7 +11,7 @@ This is a multithreaded library, so the callback will not be called from the sam
 It can monitor as many directories as necessary, but it uses one thread per directory, so it was not designed to be fast, just simple to use. If you need to monitor several directories or/and expect lot of changes per second, probably this will have a bad performance.
 
 # Example
--
+
 To monitor a directory for modifications and detect it, simple register it and provide a callback:
 
 ```c++
