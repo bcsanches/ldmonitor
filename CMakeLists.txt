@@ -12,7 +12,11 @@ set(LDMONITOR_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 add_compile_definitions(LDMONITOR_VERSION=\"${LDMONITOR_VERSION}\")
 
-option(LDMONITOR_SAMPLE_BUILD "Build Sample")
+option(LDMONITOR_SAMPLE_BUILD "Build Sample" ON)
+if (LDMONITOR_SAMPLE_BUILD)
+	add_subdirectory(sample)    
+endif()
+add_subdirectory(sample)    
 
 option(PACKAGE_TESTS "Build the tests" ON)
 if(PACKAGE_TESTS)
@@ -33,10 +37,6 @@ set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-if (LDMONITOR_SAMPLE_BUILD)
-	add_subdirectory(sample)    
-endif()
 
 
 include(InstallRequiredSystemLibraries)

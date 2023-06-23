@@ -42,7 +42,20 @@ namespace ldmonitor
 
 	typedef std::function<void(const fs::path &path, std::string fileName, const uint32_t action)> Callback_t;
 
+	/**
+	* Registers a new watch
+	* 
+	* WARNING: Should be always called from the same thread
+	*
+	*/
 	void Watch(const fs::path &path, Callback_t callback, const uint32_t action);
+
+	/**
+	* Removes an registered watch, no more events will be generated for it
+	*
+	* WARNING: Should be always called from the same thread
+	*
+	*/
 	bool Unwatch(const fs::path &path);
 
 	std::string ActionName(const uint32_t action);

@@ -32,6 +32,10 @@ endmacro()
 
 package_add_test(MainTest DirectoryMonitorTest.cpp)
 
-target_link_libraries(MainTest ldmonitor)
+if(WIN32)
+	target_link_libraries(MainTest ldmonitor)
+else(WIN32)
+	target_link_libraries(MainTest ldmonitor stdc++fs)
+endif(WIN32)
 
 target_include_directories(MainTest PRIVATE ${PROJECT_SOURCE_DIR}/include/)

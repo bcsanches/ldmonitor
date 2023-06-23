@@ -33,7 +33,7 @@ void main2()
     ldmonitor::Unwatch("/mypath/");
 }
 
-void main()
+int main()
 {
     auto tmpPath = ldmonitor::fs::temp_directory_path();
 
@@ -60,4 +60,6 @@ void main()
     //
     //got the event, just cleanup
     ldmonitor::Unwatch(tmpPath);
+
+    return 0;
 }
