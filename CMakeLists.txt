@@ -12,13 +12,13 @@ set(LDMONITOR_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 add_compile_definitions(LDMONITOR_VERSION=\"${LDMONITOR_VERSION}\")
 
-option(LDMONITOR_SAMPLE_BUILD "Build Sample" ON)
+option(LDMONITOR_SAMPLE_BUILD "Build Sample" OFF)
 if (LDMONITOR_SAMPLE_BUILD)
 	add_subdirectory(sample)    
 endif()
 add_subdirectory(sample)    
 
-option(PACKAGE_TESTS "Build the tests" ON)
+option(PACKAGE_TESTS "Build the tests" OFF)
 if(PACKAGE_TESTS)
     enable_testing()
     include(GoogleTest)

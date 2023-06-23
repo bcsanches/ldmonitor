@@ -27,7 +27,7 @@ macro(package_add_test TESTNAME)
         WORKING_DIRECTORY ${PROJECT_DIR}
         PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_DIR}"
     )
-    set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
+    set_target_properties(${TESTNAME} PROPERTIES FOLDER utests)
 endmacro()
 
 package_add_test(MainTest DirectoryMonitorTest.cpp)

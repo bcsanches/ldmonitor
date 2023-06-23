@@ -23,7 +23,13 @@
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "linux_x64" ],
       "wslPath": "${defaultWSLPath}",
-      "variables": []
+      "variables": [
+        {
+          "name": "LDMONITOR_SAMPLE_BUILD",
+          "value": "False",
+          "type": "BOOL"
+        }
+      ]
     }
   ]
 }

@@ -61,5 +61,7 @@ int main()
     //got the event, just cleanup
     ldmonitor::Unwatch(tmpPath);
 
+    std::cout << "finished\n";
+
     return 0;
 }

@@ -19,6 +19,7 @@
 
 #include <errno.h>
 #include <fcntl.h> 
+#include <poll.h>
 #include <unistd.h>
 #include <sys/inotify.h>
 
@@ -48,6 +49,7 @@ namespace ldmonitor
 
 	typedef std::map<int, DirectoryMonitor> MapWatchers_t;
 	
+	static void CheckThreadConflict();
 	static void RemoveWatcher(MapWatchers_t::iterator it, std::unique_lock<std::mutex> lock);
 
 	struct State
@@ -72,9 +74,14 @@ namespace ldmonitor
 			return m_mapWatchers.end();
 		}
 
+		State() = default;
+		State(const State &rhs) = delete;
+		State(State &&rhs) = delete;
 
 		~State()
 		{
+			CheckThreadConflict();
+
 			while (!m_mapWatchers.empty())
 			{
 				std::unique_lock l{m_clLock};
@@ -83,7 +90,7 @@ namespace ldmonitor
 
 				RemoveWatcher(it, std::move(l));
 			}
-		}
+		}		
 	};
 
 	static State g_State;
@@ -153,21 +160,28 @@ namespace ldmonitor
 
 		char buf[4096] __attribute__((aligned(__alignof__(struct inotify_event))));
 		const struct inotify_event *event;
-		ssize_t len;
+		ssize_t len;				
 
-		fd_set rfds;
+		pollfd pollfd[2];
 
-		auto maxfd = std::max(g_State.g_iNotifyFD, g_State.m_arPipefd[0]);
+		pollfd[0].events = POLLIN;		
+		pollfd[0].fd = g_State.g_iNotifyFD;
+
+		pollfd[1].events = POLLIN;		
+		pollfd[1].fd = g_State.m_arPipefd[0];
 
 		for (;;)
 		{			
-			FD_ZERO(&rfds);
-			FD_SET(g_State.g_iNotifyFD, &rfds);
-			FD_SET(g_State.m_arPipefd[0], &rfds);
+			pollfd[0].revents = 0;
+			pollfd[1].revents = 0;
 
-			auto retval = select(maxfd, &rfds, nullptr, nullptr, nullptr);
+			auto retval = poll(pollfd, 2, -1);			
 			if (retval == -1)
 			{
+				//acording to man it may happen...
+				if (errno == EAGAIN)
+					continue;
+
 				std::stringstream stream;
 
 				stream << "[FileMonitor::ThreadProc] select failed, ec: " << errno << ' ' << std::system_category().message(errno);
@@ -175,13 +189,13 @@ namespace ldmonitor
 				throw std::runtime_error(stream.str());
 			}			
 
-			if (FD_ISSET(g_State.m_arPipefd[0], &rfds))
+			if (pollfd[1].revents)
 			{
 				//data on the pipe... game over... finish it
 				break;
 			}
 
-			assert(FD_ISSET(g_State.g_iNotifyFD, &rfds));
+			assert(pollfd[0].revents);
 
 			//
 			//no data on pipe, got something....
@@ -193,16 +207,14 @@ namespace ldmonitor
 				stream << "[FileMonitor::ThreadProc] Read failed, ec: " << errno << ' ' << std::system_category().message(errno);
 
 				throw std::runtime_error(stream.str());				
-			}			
-
-			std::lock_guard lock{g_State.m_clLock};			
+			}								
 
 			/* Loop over all events in the buffer. */
-
 			for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) 
 			{
 				event = (const struct inotify_event *)ptr;
 
+				std::lock_guard lock{g_State.m_clLock};
 				//may it was removed?
 				auto it = g_State.m_mapWatchers.find(event->wd);
 				if (it == g_State.m_mapWatchers.end())
@@ -212,38 +224,7 @@ namespace ldmonitor
 
 				auto &dirInfo = it->second;
 				if(dirInfo.m_u32Flags & action)
-					dirInfo.m_pfnCallback(dirInfo.m_pthPath, event->name, action);
-
-				/* Print event type. */
-
-				if (event->mask & IN_OPEN)
-					printf("IN_OPEN: ");
-				if (event->mask & IN_CLOSE_NOWRITE)
-					printf("IN_CLOSE_NOWRITE: ");
-				if (event->mask & IN_CLOSE_WRITE)
-					printf("IN_CLOSE_WRITE: ");
-
-				/* Print the name of the watched directory. */
-#if 0
-				for (int i = 1; i < argc; ++i) {
-					if (wd[i] == event->wd) {
-						printf("%s/", argv[i]);
-						break;
-					}
-				}
-#endif
-
-				/* Print the name of the file. */
-
-				if (event->len)
-					printf("%s", event->name);
-
-				/* Print type of filesystem object. */
-
-				if (event->mask & IN_ISDIR)
-					printf(" [directory]\n");
-				else
-					printf(" [file]\n");
+					dirInfo.m_pfnCallback(dirInfo.m_pthPath, event->name, action);				
 			}
 		}	
 	}
@@ -288,7 +269,7 @@ namespace ldmonitor
 					CloseINotify();					
 				}
 
-				throw std::runtime_error(stream.str());
+				throw std::invalid_argument(stream.str());
 			}
 
 			g_State.m_mapWatchers.insert(std::make_pair(wd, DirectoryMonitor{ path, callback, flags }));
@@ -310,14 +291,17 @@ namespace ldmonitor
 		}
 	}
 
-	static void RemoveWatcher(MapWatchers_t::iterator it, std::unique_lock<std::mutex> lock)
+	static void CheckThreadConflict()
 	{
 		if (std::this_thread::get_id() == g_State.m_thMonitorThread.get_id())
 		{
 			//called from the callback? - not supported
 			throw std::logic_error("[[FileMonitor::UnwatchFile] Cannot remove watcher from the thread!");
 		}
-				
+	}
+
+	static void RemoveWatcher(MapWatchers_t::iterator it, std::unique_lock<std::mutex> lock)
+	{						
 		inotify_rm_watch(g_State.g_iNotifyFD, it->first);			
 		
 		g_State.m_mapWatchers.erase(it);
@@ -343,6 +327,8 @@ namespace ldmonitor
 
 	bool Unwatch(const fs::path &path)
 	{
+		CheckThreadConflict();
+
 		std::unique_lock lock{g_State.m_clLock};
 
 		auto it = g_State.TryFindDirectory(path);
