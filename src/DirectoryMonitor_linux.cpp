@@ -223,8 +223,11 @@ namespace ldmonitor
 				auto action = ReadActions2Flags(event->mask);
 
 				auto &dirInfo = it->second;
-				if(dirInfo.m_u32Flags & action)
-					dirInfo.m_pfnCallback(dirInfo.m_pthPath, event->name, action);				
+				if (dirInfo.m_u32Flags & action)
+				{
+					auto now = std::chrono::steady_clock::now();
+					dirInfo.m_pfnCallback(dirInfo.m_pthPath, event->name, action, std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()));
+				}					
 			}
 		}	
 	}

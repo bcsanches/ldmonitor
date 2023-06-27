@@ -26,10 +26,28 @@
       "variables": [
         {
           "name": "LDMONITOR_SAMPLE_BUILD",
-          "value": "False",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "LD_MONITOR_PACKAGE_TESTS",
+          "value": "True",
           "type": "BOOL"
         }
       ]
+    },
+    {
+      "name": "WSL-Clang-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeExecutable": "cmake",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_clang_x64" ],
+      "wslPath": "${defaultWSLPath}"
     }
   ]
 }

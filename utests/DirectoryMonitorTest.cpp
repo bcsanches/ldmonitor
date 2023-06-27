@@ -18,7 +18,7 @@
 using namespace std::chrono_literals;
 
 
-static void NullFileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void NullFileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags, std::chrono::microseconds time)
 {
 	//empty
 }
@@ -103,7 +103,7 @@ TEST(ldmonitor, CancelWaitingWatcherTest)
 
 static bool g_fThrowFileCallbackCalled = false;
 
-static void ThrowFileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void ThrowFileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags, std::chrono::microseconds time)
 {	
 	ASSERT_THROW(ldmonitor::Unwatch(path), std::logic_error);
 
@@ -152,7 +152,7 @@ static bool g_fModifyCalled = false;
 static bool g_fRenameOldCalled = false;
 static bool g_fRenameNewCalled = false;
 
-static void FileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void FileCallback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags, std::chrono::microseconds time)
 {
 	if(flags & ldmonitor::MONITOR_ACTION_FILE_CREATE)
 		g_fCreateCalled = true;
