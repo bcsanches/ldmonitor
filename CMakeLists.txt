@@ -16,7 +16,6 @@ option(LDMONITOR_SAMPLE_BUILD "Build Sample" OFF)
 if (LDMONITOR_SAMPLE_BUILD)
 	add_subdirectory(sample)    
 endif()
-add_subdirectory(sample)    
 
 option(LD_MONITOR_PACKAGE_TESTS "Build the tests" OFF)
 if(LD_MONITOR_PACKAGE_TESTS)

@@ -1,7 +1,7 @@
 add_executable(MySample sample.cpp)
 
 if(WIN32)
-	target_link_libraries(MySample ldmonitor)
+	target_link_libraries(MySample ldmonitor Winmm.lib)
 else(WIN32)
 	target_link_libraries(MySample ldmonitor stdc++fs)
 endif(WIN32)

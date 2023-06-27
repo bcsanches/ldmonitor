@@ -6,7 +6,7 @@
 
 static bool g_fCallbackCalled = false;
 
-static void Callback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
+static void Callback(const ldmonitor::fs::path &path, std::string fileName, uint32_t flags, std::chrono::milliseconds time)
 {
     using namespace std;
 
@@ -19,9 +19,9 @@ void main2()
 {
     ldmonitor::Watch(
         "/mypath/", 
-        [](const ldmonitor::fs::path &path, std::string fileName, uint32_t flags)
+        [](const ldmonitor::fs::path &path, std::string fileName, uint32_t flags, std::chrono::milliseconds time)
         {
-            std::cout << "Callback called, file " << path << fileName << ' ' << ldmonitor::ActionName(flags) << '\n';
+            std::cout << "Callback called, file " << path << fileName << ' ' << ldmonitor::ActionName(flags) << " at " << time.count() << '\n';
         }, 
         ldmonitor::MONITOR_ACTION_FILE_CREATE | ldmonitor::MONITOR_ACTION_FILE_MODIFY
     );

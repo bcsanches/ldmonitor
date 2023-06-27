@@ -198,7 +198,7 @@ namespace ldmonitor
 						0
 					);					
 
-					dirInfo.m_pfnCallback(dirInfo.m_pthPath, std::move(utf8), action);
+					dirInfo.m_pfnCallback(dirInfo.m_pthPath, std::move(utf8), action, std::chrono::milliseconds{timeGetTime()});
 				}
 			} while (info->NextEntryOffset != 0);
 

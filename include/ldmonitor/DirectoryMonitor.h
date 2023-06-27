@@ -40,7 +40,7 @@ namespace ldmonitor
 		MONITOR_ACTION_FILE_RENAME_NEW_NAME = 0x10
 	};
 
-	typedef std::function<void(const fs::path &path, std::string fileName, const uint32_t action)> Callback_t;
+	typedef std::function<void(const fs::path &path, std::string fileName, const uint32_t action, std::chrono::milliseconds time)> Callback_t;
 
 	/**
 	* Registers a new watch
